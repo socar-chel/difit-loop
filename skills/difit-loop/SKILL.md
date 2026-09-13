@@ -7,7 +7,8 @@ description: PR 올리기 전 difit 왕복 리뷰 루프 — 셀프리뷰 스레
 
 difit(로컬 diff 뷰어)을 **반복 왕복 리뷰**에 쓴다. upstream `difit`·`difit-review` 스킬은 "한 번 띄워
 코멘트를 주고받는" 단발 동작을 다루고, 이 스킬은 그 위의 루프 — 셀프리뷰 주입 → 사용자 코멘트 →
-반영 커밋 → 스레드 이월 → 반복 — 를 소유한다. difit 자체는 고치지 않는다.
+반영 커밋 → 스레드 이월 → 반복 — 를 소유한다. difit의 소스 코드는 건드리지 않는다(포크 없음) — 루프 동안
+고치는 것은 리뷰 대상 코드다.
 
 이 문서의 플래그·API는 difit v5.0.8~5.0.12에서 실측한 것이다. difit 사용법이 갱신되면 upstream
 SKILL.md를 먼저 읽고 이 절차를 맞춘다.
@@ -28,9 +29,10 @@ SKILL.md를 먼저 읽고 이 절차를 맞춘다.
    공유 `.git`의 로컬 ref가 낡아 있을 수 있어, 브랜치명을 그대로 주면 남의 커밋이 diff에 섞인다.
    `git fetch origin <base>` 후 `git log HEAD..origin/<base> --oneline`으로 원격 전진 여부를 확인하고,
    전진해 있으면 리뷰 시작 전에 사용자에게 알린다.
-5. 포트: 사용자 지침(CLAUDE.md 등)에 레포별 포트표가 있으면 그것을, 없으면 `4966`을 쓴다.
+5. 포트: 사용자 지침(CLAUDE.md 등)에 레포별 포트표가 있으면 그것을, 없으면 `4966`(difit 기본값)을 쓴다.
    **대상이 하나여도 `--port`를 명시한다** — 생략하면 다른 세션이 4966을 쥐고 있을 때 조용히 4967로
-   밀려 사용자가 옛 탭을 본다.
+   밀려 사용자가 옛 탭을 본다. 포트표를 만들 때는 **레포 사이를 10 단위로 띄운다**(4966 · 4976 · 4986 …) —
+   difit의 폴백이 +1이라 이웃 번호를 쓰면 폴백이 옆 레포의 포트에 떨어진다.
 
 ## 1단계 — 셀프리뷰 스레드 준비
 
@@ -38,9 +40,11 @@ SKILL.md를 먼저 읽고 이 절차를 맞춘다.
    자잘한 문제(오타·디버그 출력·명백한 버그)는 바로 수정 후 커밋한다.
 2. 판단이 갈리는 문제는 수정하지 말고 **"논의 필요" 스레드**로 모은다. 채팅에만 쓰지 않는다 —
    사용자가 diff를 보는 자리에 지적이 붙어 있어야 화면과 채팅을 번갈아 보지 않는다.
-3. 지적이 아니라 **설명**이 필요한 변경(왜 필요한지, 무엇을 먼저 보면 되는지)에는 `🔎`로 시작하는
-   스레드를 붙인다. 지적은 `⚠️`로 시작한다. 자명한 변경·기계적 치환에는 달지 않는다 — 스레드가
-   많다고 좋은 리뷰가 아니다.
+3. 스레드 본문은 **신호등 세 단계**로 시작한다 — 리뷰어가 빨강부터 훑을 수 있게:
+   - `🔴` 반드시 고쳐야 한다 — 버그·보안·데이터 손실처럼 머지되면 안 되는 것
+   - `🟡` 논의·제안 — 판단이 갈리는 것, 더 나은 대안이 있어 보이는 것
+   - `🟢` 설명 — 조치 불필요. 왜 이렇게 했는지, 무엇을 먼저 보면 되는지
+   자명한 변경·기계적 치환에는 달지 않는다 — 스레드가 많다고 좋은 리뷰가 아니다.
 4. 앵커(파일·줄)는 눈으로 세지 않고 헬퍼로 구한다. 파일별 `{path, line, sample}` JSONL을 낸다:
    ```bash
    node <이 스킬 경로>/scripts/first-added-line.mjs origin/<base>...HEAD
@@ -68,10 +72,13 @@ npx difit HEAD origin/<base> --merge-base --background --keep-alive --port <포�
 기동 직후 **서버가 보는 것과 git이 보는 것을 대조하고, 맞을 때만 사용자에게 URL을 준다**:
 
 ```bash
-curl -s localhost:<port>/api/diff | jq '{base:.baseCommitish, target:.targetCommitish, files:(.files|length)}'
-git rev-parse --short origin/<base>
+curl -s localhost:<port>/api/diff | jq '{base:.baseCommitish, target:.targetCommitish, mode:.requestedBaseMode, files:(.files|length)}'
+git merge-base --short origin/<base> HEAD 2>/dev/null || git rev-parse --short "$(git merge-base origin/<base> HEAD)"
 git diff origin/<base>...HEAD --stat | tail -1
 ```
+
+`base`는 **merge-base 커밋**이어야 한다(`--merge-base`를 줬으므로 `origin/<base>` 끝 커밋과 다를 수 있다 —
+원격이 전진했을수록 다르다). `mode`는 `merge-base`, `files`는 `--stat` 마지막 줄의 파일 수와 같아야 한다.
 
 - 출력 JSON의 `port`가 요청값과 다르면(점유돼 +1로 폴백) **그 값을 쓰고 사용자에게 알린다.**
   이후 `comment get/add`의 `--port`도 전부 실제 값이다.
@@ -128,8 +135,9 @@ npx difit comment get --port <port> --format json > old.json
 4. 추가 코멘트가 있으면 3~6단계를 반복한다. 사용자가 승인("OK")하면 7단계로.
 
 옛 세션은 사라지지 않고 옛 키에 남는다. 되찾으려면 `/api/diff`가 보고한 **7자 축약형** 그대로
-`?base=<base>&target=<옛 target>&baseMode=merge-base`로 조회한다(8자로 주면 키가 어긋나 0건).
-키 끝의 모드는 `--merge-base` 유무로 갈리므로 **루프 내내 한 모드를 유지한다.**
+`GET /api/comments-json?base=<base7>&target=<옛 target7>&baseMode=merge-base`로 조회한다 — `baseMode`를
+빼거나 8자로 주면 키가 어긋나 0건이다(v5.0.12 실측). 키 끝의 모드는 `--merge-base` 유무로 갈리므로
+**루프 내내 한 모드를 유지한다.**
 
 ## 7단계 — 종료
 
@@ -144,7 +152,7 @@ npx difit comment get --port <port> --format json > old.json
 [{ "type": "thread", "author": "claude",
    "filePath": "src/lib/auth/route-fetch.ts",
    "position": { "side": "new", "line": 50 },
-   "body": "⚠️ 논의 필요 — …" }]
+   "body": "🟡 논의 — …" }]
 ```
 
 - `filePath`는 **저장소 기준 상대경로** (`GET /api/diff`의 `files[].path`와 같은 형식). 어긋나면 400이

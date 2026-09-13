@@ -9,11 +9,11 @@ if [ ${#ports[@]} -eq 0 ]; then
 fi
 
 echo "## difit 서버"
-ps -eo pid,lstart,command | grep -E 'node [^ ]*difit ' | cut -c1-200
+ps -eo pid,lstart,command | grep -E 'node [^ ]*difit ' | sed -E 's#[^ ]*/node ##; s#[^ ]*/difit #difit #' | cut -c1-200
 echo
 echo "## 포트별 /api/diff (base·target은 서버가 기동 시점에 해석한 값 — 브랜치가 전진했어도 여기 값은 안 바뀐다)"
 for p in "${ports[@]}"; do
   body=$(curl -sf --max-time 3 "http://localhost:$p/api/diff") || { echo "  :$p 응답 없음"; continue; }
   printf '  :%s ' "$p"
-  printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("baseCommitish"), "→", d.get("targetCommitish"), "files", len(d.get("files",[])), "mode", d.get("baseMode") or "-")'
+  printf '%s' "$body" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("baseCommitish"), "→", d.get("targetCommitish"), "files", len(d.get("files",[])), "mode", d.get("requestedBaseMode") or "-")'
 done

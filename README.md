@@ -49,11 +49,14 @@ npx difit HEAD origin/<base> --merge-base --background --keep-alive --port <레�
 ```markdown
 ## difit 리뷰 루프
 - PR을 만들기 전에 /difit-loop 로 사용자 리뷰를 받는다.
-- 레포별 포트: <레포A> 4966 · <레포B> 4967 · 그 외 4973부터.
+- 레포별 포트: <레포A> 4966 · <레포B> 4976 · <레포C> 4986 · 그 외 5000부터. (10 단위로 띄운다 — difit 폴백이 +1이라 이웃 번호면 옆 레포 포트에 떨어진다)
 ```
 
 레포별 포트를 고정하는 이유: difit은 탭 제목이 `difit - Git Diff Viewer`로 고정이라 "지금 보는 창이 어느
-레포인지"를 포트 말고는 가를 수 없다.
+레포인지"를 포트 말고는 가를 수 없다. 4966은 difit 기본값이라 `--port`를 빠뜨린 서버가 첫 레포 포트에
+떨어진다는 이점뿐이고, 번호 자체에 의미는 없다.
+
+스레드 본문은 신호등으로 시작한다 — `🔴` 반드시 수정 · `🟡` 논의·제안 · `🟢` 설명(조치 불필요).
 
 ## 핵심 함정 두 가지
 
@@ -79,9 +82,3 @@ npx difit HEAD origin/<base> --merge-base --background --keep-alive --port <레�
 node --test skills/difit-loop/scripts/*.test.mjs
 ```
 
-## 왜 difit을 포크하지 않나
-
-difit이 `--comment`·`comment add`·`/api/comment-imports`를 공식 제공하고 본문에 마크다운을 렌더한다.
-`type:"thread"` 주입은 diff 검증을 거치지 않아 앵커를 우리가 정할 수 있다 — 필요한 것 대부분이 지침 층에서
-풀린다. 포크 비용은 확정적이다: `package.json`에 `exports`가 없어 라이브러리로 못 쓰고, `prepare`가 빌드가
-아니라 `lefthook install`이라 `npx github:<user>/difit`가 동작하지 않는다(dist 미커밋).
