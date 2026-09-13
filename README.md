@@ -14,18 +14,17 @@ Node ≥ 21이면 difit은 `npx`로 알아서 받는다.
 ## 한 라운드
 
 ```mermaid
-flowchart LR
-  A["셀프리뷰<br/>🔴🟡🟢 스레드 준비"] -->|--comment| B["difit 서버<br/>HEAD · merge-base · keep-alive"]
-  B -->|URL| C["브라우저"]
-  C --> D["사용자 코멘트"]
-  D -->|커밋 전| E["comment get"]
-  E --> F["반영 커밋"]
-  F -->|carry-comments| G["comment add<br/>새 thread로"]
-  G -->|새로고침 ⟲| C
-  G -.->|OK| H["kill pid → PR"]
+flowchart TB
+  A["① 셀프리뷰 — 🔴🟡🟢 스레드 준비"] -->|--comment| B["② difit 서버 — HEAD · merge-base · keep-alive"]
+  B -->|URL| C["③ 브라우저에서 사용자 코멘트 → “끝났어요”"]
+  C -->|커밋 전| D["④ comment get → old.json"]
+  D --> E["⑤ 판단 · 반영 커밋"]
+  E -->|carry-comments| F["⑥ comment add — 새 thread로 → “새로고침해 주세요”"]
+  F -->|추가 코멘트| C
+  F -.->|“OK”| G["⑦ kill pid → PR 생성으로"]
   style B stroke:#21489f,stroke-width:2px
-  style E stroke:#21489f,stroke-width:2px
-  style G stroke:#21489f,stroke-width:2px
+  style D stroke:#21489f,stroke-width:2px
+  style F stroke:#21489f,stroke-width:2px
 ```
 
 사용자가 할 일은 두 가지다 — **브라우저에서 코멘트를 달고 "끝났어요"**, 그리고 반영을 보고 **"OK"**.
