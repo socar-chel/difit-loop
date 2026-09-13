@@ -8,7 +8,7 @@ upstream `difit`·`difit-review` 스킬은 "한 번 띄워 코멘트를 주고�
 루프다. difit 자체는 고치지 않는다.
 
 ```bash
-npx skills add <org>/difit-loop
+npx skills add socar-chel/difit-loop
 ```
 
 ## 30초 요약
