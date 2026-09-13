@@ -12,6 +12,9 @@ npx skills add socar-chel/difit-loop -g
 설정은 없다. 설치 후 Claude Code에서 `/difit-loop <base>` 또는 "PR 준비하자"로 호출한다.
 Node ≥ 21이면 difit은 `npx`로 알아서 받는다.
 
+갱신은 자동이 아니다 — 이 리포가 바뀌면 `npx skills update -g`로 받는다. 스킬은 에이전트가 내 권한으로 따르는 지시문이니,
+갱신 뒤 `~/.claude/skills/difit-loop/`의 diff를 한 번 보는 것을 권한다.
+
 ## 한 라운드
 
 <img src="docs/loop.png" alt="한 라운드 — 에이전트: ① 커밋된 변경을 스스로 점검 → ② 리뷰 창을 연다 → ④ 코멘트를 검토, 맞는 것만 고쳐서 커밋 → ⑤ 리뷰 창의 스레드에 답글을 단다(고친 것도, 안 고친 이유도) → ⑦ PR 생성(스킬 밖). 사람: ③ 브라우저에서 코드 보며 코멘트를 단다 → 코멘트 달았어 → ⑥ 새 버전에서 답을 확인한다 → 더 묻거나 OK" width="100%">
