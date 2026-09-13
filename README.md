@@ -65,3 +65,7 @@ node --test skills/difit-loop/scripts/*.test.mjs
 
 실측 기준 difit v5.0.12. upstream `difit`·`difit-review` 스킬(`npx skills add yoshiko-pg/difit`)은 단발 실행을
 다루고, 이 스킬은 그 위의 루프다.
+
+## 라이선스
+
+MIT
