@@ -44,18 +44,15 @@ npx difit HEAD origin/<base> --merge-base --background --keep-alive --port <레�
 | `--keep-alive` | 창을 닫는 순간 서버와 메모리의 코멘트가 사라진다 |
 | `--port` | difit 기본값 4966부터 비는 포트를 잡아, 다른 세션이 쥐면 조용히 4967로 밀린다 |
 
-## 지침에 붙일 것 (CLAUDE.md 등)
+## 설정은 없다 — 선택 사항 두 가지
 
-```markdown
-## difit 리뷰 루프
-- PR을 만들기 전에 /difit-loop 로 사용자 리뷰를 받는다.
-- 레포별 포트: <레포A> 5100 · <레포B> 5110 · <레포C> 5120 · 스택 PR 5190~5192 · 그 외 5200부터. (10 단위로 띄운다 — difit 폴백이 +1이라 이웃 번호면 옆 레포 포트에 떨어진다)
-```
+설치하면 바로 쓴다. "PR 준비", "리뷰 루프" 같은 말이나 `/difit-loop <base>`로 호출된다.
 
-레포별 포트를 고정하는 이유: difit은 탭 제목이 `difit - Git Diff Viewer`로 고정이라 "지금 보는 창이 어느
-레포인지"를 포트 말고는 가를 수 없다. 번호 자체에 의미는 없다 — 5100번대는 3000·4200·5000(macOS AirPlay)·
-5173(Vite)·6006·8080처럼 개발 도구가 선점하는 번호와 겹치지 않아 골랐다. 머신마다
-`lsof -nP -iTCP -sTCP:LISTEN`으로 한 번 확인하고 고른다.
+- **PR 전 강제** — 에이전트가 PR을 만들기 전에 반드시 이 루프를 거치게 하려면 CLAUDE.md에 한 줄:
+  `- PR을 만들기 전에 /difit-loop 로 사용자 리뷰를 받는다.`
+- **포트** — 기본은 레포 이름에서 계산한다(`scripts/difit-port.sh`: 5100~5890, 10의 배수). 같은 레포는
+  어느 머신·워크트리에서든 같은 포트라 "지금 보는 창이 어느 레포인지"가 포트로 갈린다. 번호를 직접
+  정하고 싶으면 CLAUDE.md에 `- 레포별 포트: <레포A> 5100 · <레포B> 5110` 식으로 적으면 그것이 우선이다.
 
 스레드 본문은 신호등으로 시작한다 — `🔴` 반드시 수정 · `🟡` 논의·제안 · `🟢` 설명(조치 불필요).
 
@@ -77,6 +74,7 @@ npx difit HEAD origin/<base> --merge-base --background --keep-alive --port <레�
 | --- | --- |
 | `first-added-line.mjs` | diff에서 파일별 첫 `+` 줄의 new 측 번호 → 코멘트 앵커 |
 | `carry-comments.mjs` | 커밋으로 끊긴 스레드를 새 diff의 유효한 앵커로 옮긴 `comment add` 페이로드 생성 |
+| `difit-port.sh` | origin 레포명 → 5100~5890 사이 10의 배수 포트. 인자 1·2는 스택 PR용 +1·+2 |
 | `difit-health-check.sh` | 창이 이상할 때 프로세스 · 포트별 `/api/diff`를 한 번에 |
 
 ```bash

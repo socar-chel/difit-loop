@@ -29,12 +29,13 @@ SKILL.md를 먼저 읽고 이 절차를 맞춘다.
    공유 `.git`의 로컬 ref가 낡아 있을 수 있어, 브랜치명을 그대로 주면 남의 커밋이 diff에 섞인다.
    `git fetch origin <base>` 후 `git log HEAD..origin/<base> --oneline`으로 원격 전진 여부를 확인하고,
    전진해 있으면 리뷰 시작 전에 사용자에게 알린다.
-5. 포트: 사용자 지침(CLAUDE.md 등)에 레포별 포트표가 있으면 그것을, 없으면 `5100`을 쓴다.
-   **대상이 하나여도 `--port`를 명시한다** — 생략하면 difit 기본값 4966부터 비는 포트를 잡는데, 다른
-   세션이 쥐고 있으면 조용히 4967로 밀려 사용자가 옛 탭을 본다. 포트표를 만들 때는 **레포 사이를 10 단위로
-   띄운다**(5100 · 5110 · 5120 …) — difit의 폴백이 +1이라 이웃 번호를 쓰면 폴백이 옆 레포의 포트에 떨어진다.
-   5100번대를 권하는 이유: 3000·4200·5000(macOS AirPlay)·5173(Vite)·6006·8080처럼 개발 도구가 선점하는
-   번호와 겹치지 않는다. 머신마다 `lsof -nP -iTCP -sTCP:LISTEN`으로 한 번 확인하고 고른다.
+5. 포트: **설정 없이 레포 이름에서 계산한다** — `bash <이 스킬 경로>/scripts/difit-port.sh`
+   (origin 레포명의 cksum → 5100~5890, 10의 배수). 같은 레포는 어느 머신·워크트리에서든 같은 포트라
+   "지금 보는 창이 어느 레포인지"가 포트로 갈린다. 사용자 지침(CLAUDE.md 등)에 레포별 포트표가 있으면
+   그것이 우선이다. **대상이 하나여도 `--port`를 명시한다** — 생략하면 difit 기본값 4966부터 비는 포트를
+   잡는데, 다른 세션이 쥐고 있으면 조용히 4967로 밀려 사용자가 옛 탭을 본다. 10의 배수만 쓰는 이유는
+   difit 폴백이 +1이라 이웃 번호가 다른 레포에 배정되면 폴백이 그리로 떨어지기 때문이고, 5100번대는
+   3000·4200·5000(macOS AirPlay)·5173(Vite)·6006·8080처럼 개발 도구가 선점하는 번호와 겹치지 않는다.
 
 ## 1단계 — 셀프리뷰 스레드 준비
 
@@ -178,10 +179,11 @@ npx difit comment get --port <port> --format json > old.json
 
 ```bash
 git rev-parse --short origin/main <브랜치1> <브랜치2> <브랜치3>
-npx difit <sha1> <mainSha> --background --keep-alive --port 5190 --no-open   # ① base main
-npx difit <sha2> <sha1>    --background --keep-alive --port 5191 --no-open   # ② base ①
-npx difit <sha3> <sha2>    --background --keep-alive --port 5192 --no-open   # ③ base ②
-for p in 5190 5191 5192; do curl -s localhost:$p/api/diff | jq -c '{p:'$p', base:.baseCommitish, target:.targetCommitish, files:(.files|length)}'; done
+P=$(bash <이 스킬 경로>/scripts/difit-port.sh)                                    # 레포 포트, 스택은 +0 +1 +2
+npx difit <sha1> <mainSha> --background --keep-alive --port $P       --no-open   # ① base main
+npx difit <sha2> <sha1>    --background --keep-alive --port $((P+1)) --no-open   # ② base ①
+npx difit <sha3> <sha2>    --background --keep-alive --port $((P+2)) --no-open   # ③ base ②
+for p in $P $((P+1)) $((P+2)); do curl -s localhost:$p/api/diff | jq -c '{p:'$p', base:.baseCommitish, target:.targetCommitish, files:(.files|length)}'; done
 ```
 
 - 타깃·base 모두 SHA로 준다 — 창 자체가 무엇을 보는지 말하게.
