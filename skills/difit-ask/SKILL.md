@@ -50,7 +50,8 @@ npx difit HEAD origin/<base> --merge-base --background --keep-alive --port $P
 맥락을 화면에 같이 놓고 싶을 때 고른다. 대신 (v5.0.12 실측) 세션이 `stdin` 키로 잡혀 "에디터에서 열기"가
 꺼지고(`openInEditorAvailable: false`), `--context`를 못 쓴다. 에이전트가 답할 때 파일을 읽는 것은 어차피
 로컬 체크아웃에서 하므로, 0단계는 이 모드에서도 생략하지 않는다. ⚠️ difit 자체 리포를 체크아웃한 디렉터리에서
-`npx difit`을 치면 로컬 패키지(미빌드)가 잡혀 exit 127이 난다 — 다른 디렉터리에서 띄운다.
+`npx difit`을 치면 로컬 패키지(미빌드)가 잡혀 exit 127이 난다 — `comment get/add`까지 전부 그렇다. 그 리포를
+읽을 때는 `command -v difit`(전역 설치)이나 npx 캐시의 바이너리(`ls ~/.npm/_npx/*/node_modules/.bin/difit`)를 절대경로로 쓴다.
 
 ## 2단계 — 투어 시드 (조건부)
 

@@ -63,6 +63,11 @@ Node ≥ 21이면 difit은 `npx`로 알아서 받는다.
 
 `/difit-ask 123` 또는 "이 PR 같이 봐줘"로 시작한다. 절차는 [skills/difit-ask/SKILL.md](skills/difit-ask/SKILL.md).
 
+<img src="docs/screens/04-ask-thread.png" alt="difit-ask: 🟢 읽기 순서 투어 스레드 → 사용자 질문 → 코드 근거(package.json 줄·커밋)를 인용한 답글 → 작성자에게 물을 것 표시" width="100%">
+
+실제 공개 PR(yoshiko-pg/difit #470, 파일 6개)에서 — 🟢 투어 → 사용자 질문 → `package.json:95`·커밋 `d6c86bf`를 근거로 답하고,
+코드만으로 모르는 것은 `→ 작성자`로 표시해 마무리 초안으로 모은다.
+
 ## 코멘트 규약
 
 스레드 본문은 신호등으로 시작한다. 리뷰어는 빨강부터 본다.
