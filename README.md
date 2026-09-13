@@ -13,22 +13,10 @@ Node ≥ 21이면 difit은 `npx`로 알아서 받는다.
 
 ## 한 라운드
 
-```mermaid
-flowchart TB
-  A["① 셀프리뷰 — 🔴🟡🟢 스레드 준비"] -->|--comment| B["② difit 서버 — HEAD · merge-base · keep-alive"]
-  B -->|URL| C["③ 브라우저에서 사용자 코멘트 → “끝났어요”"]
-  C -->|커밋 전| D["④ comment get → old.json"]
-  D --> E["⑤ 판단 · 반영 커밋"]
-  E -->|carry-comments| F["⑥ comment add — 새 thread로 → “새로고침해 주세요”"]
-  F -->|추가 코멘트| C
-  F -.->|“OK”| G["⑦ kill pid → PR 생성으로"]
-  style B stroke:#21489f,stroke-width:2px
-  style D stroke:#21489f,stroke-width:2px
-  style F stroke:#21489f,stroke-width:2px
-```
+<img src="docs/loop.png" alt="한 라운드: 셀프리뷰 → difit 서버 → 브라우저 창 → 사용자 코멘트 → comment get(커밋 전) → 반영 커밋 → carry-comments → comment add(새 thread) → 새로고침 ⟲ / OK면 종료 → draft PR" width="100%">
 
 사용자가 할 일은 두 가지다 — **브라우저에서 코멘트를 달고 "끝났어요"**, 그리고 반영을 보고 **"OK"**.
-나머지는 에이전트가 한다. 파란 테두리가 이 스킬이 더하는 부분이다.
+나머지는 에이전트가 한다. 파란 테두리가 이 스킬이 더하는 부분(표준형 · 헬퍼)이다.
 
 ## 왜 그냥 difit을 띄우면 안 되나
 
