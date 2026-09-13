@@ -33,7 +33,7 @@ npx skills add socar-chel/difit-loop
 ```bash
 npx difit HEAD origin/<base> --merge-base --background --keep-alive --port <레포별 포트> \
   --comment "$(cat comments.json)"
-# → {"port":4966,"url":"http://localhost:4966","pid":12345}
+# → {"port":5100,"url":"http://localhost:5100","pid":12345}
 ```
 
 | 인자 | 빠뜨리면 |
@@ -42,19 +42,20 @@ npx difit HEAD origin/<base> --merge-base --background --keep-alive --port <레�
 | `--merge-base` | 원격 base 전진분(남의 머지)이 diff에 섞인다 |
 | `--background` | 배너 파싱·URL 폴링이 필요하고 pid를 모른다 |
 | `--keep-alive` | 창을 닫는 순간 서버와 메모리의 코멘트가 사라진다 |
-| `--port` | 다른 세션이 4966을 쥐면 조용히 4967로 밀린다 |
+| `--port` | difit 기본값 4966부터 비는 포트를 잡아, 다른 세션이 쥐면 조용히 4967로 밀린다 |
 
 ## 지침에 붙일 것 (CLAUDE.md 등)
 
 ```markdown
 ## difit 리뷰 루프
 - PR을 만들기 전에 /difit-loop 로 사용자 리뷰를 받는다.
-- 레포별 포트: <레포A> 4966 · <레포B> 4976 · <레포C> 4986 · 그 외 5000부터. (10 단위로 띄운다 — difit 폴백이 +1이라 이웃 번호면 옆 레포 포트에 떨어진다)
+- 레포별 포트: <레포A> 5100 · <레포B> 5110 · <레포C> 5120 · 스택 PR 5190~5192 · 그 외 5200부터. (10 단위로 띄운다 — difit 폴백이 +1이라 이웃 번호면 옆 레포 포트에 떨어진다)
 ```
 
 레포별 포트를 고정하는 이유: difit은 탭 제목이 `difit - Git Diff Viewer`로 고정이라 "지금 보는 창이 어느
-레포인지"를 포트 말고는 가를 수 없다. 4966은 difit 기본값이라 `--port`를 빠뜨린 서버가 첫 레포 포트에
-떨어진다는 이점뿐이고, 번호 자체에 의미는 없다.
+레포인지"를 포트 말고는 가를 수 없다. 번호 자체에 의미는 없다 — 5100번대는 3000·4200·5000(macOS AirPlay)·
+5173(Vite)·6006·8080처럼 개발 도구가 선점하는 번호와 겹치지 않아 골랐다. 머신마다
+`lsof -nP -iTCP -sTCP:LISTEN`으로 한 번 확인하고 고른다.
 
 스레드 본문은 신호등으로 시작한다 — `🔴` 반드시 수정 · `🟡` 논의·제안 · `🟢` 설명(조치 불필요).
 

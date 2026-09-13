@@ -2,10 +2,10 @@
 // carry-comments — 커밋으로 target 이 바뀌어 빈 세션이 된 difit 스레드를 새 diff 의 유효한 앵커로
 // 옮겨 다시 올릴 수 있는 comment-imports JSON 을 만든다.
 //
-//   npx difit comment get --port 4970 --format json > old.json     # 반드시 커밋 전에
+//   npx difit comment get --port 5100 --format json > old.json     # 반드시 커밋 전에
 //   git commit …
 //   node carry-comments.mjs old.json origin/main...HEAD > new.json
-//   npx difit comment add --port 4970 "$(cat new.json)"
+//   npx difit comment add --port 5100 "$(cat new.json)"
 //
 // 왜 필요한가 — difit 코멘트 세션은 base+target 커밋 쌍이 키라 커밋마다 리셋된다(SKILL.md 「코멘트는 커밋을 넘어 살지 않는다」).
 // 되살릴 때 앵커를 눈으로 다시 세면 ①·② 함정(first-added-line.mjs 참조)에 다시 걸린다.
