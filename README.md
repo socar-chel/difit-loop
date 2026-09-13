@@ -1,6 +1,7 @@
 # difit-loop
 
-코딩 에이전트가 **PR을 올리기 전에 사람 리뷰를 받고, 반영하고, OK가 나올 때까지 반복**하게 하는 스킬.
+코딩 에이전트가 **PR을 올리기 전에 사람 리뷰를 받고, 반영하고, OK가 나올 때까지 반복**하게 하는 스킬 — 그리고
+반대 방향으로 **남의 PR을 읽으며 묻는** `difit-ask`.
 리뷰 화면은 [difit](https://github.com/yoshiko-pg/difit)(로컬 diff 뷰어)이고, difit은 고치지 않는다 — 어떻게 부르고,
 무엇을 넣고, 커밋 사이에서 코멘트를 어떻게 살리는지만 정한다.
 
@@ -47,6 +48,21 @@ Node ≥ 21이면 difit은 `npx`로 알아서 받는다.
 | 포트가 조용히 +1로 밀려 옛 탭을 보게 된다 | 레포 이름에서 포트를 계산하고(`difit-port.sh`), 실제 포트를 JSON에서 읽는다 |
 | 에이전트가 단 스레드가 엉뚱한 줄에 붙거나 안 보인다 | `first-added-line.mjs`로 `+` 줄만 앵커로 쓴다 |
 
+## 반대 방향 — `difit-ask`
+
+같은 설치로 들어오는 두 번째 스킬. **남이 올린 PR·브랜치**를 워크트리로 받아 difit에 띄우고, 사용자가 코드 줄에
+단 질문에 에이전트가 주변 코드·호출부·테스트를 읽고 **같은 스레드에 답글**을 단다. 코드는 고치지 않는다.
+
+| | `difit-loop` | `difit-ask` |
+| --- | --- | --- |
+| 방향 | 내 코드를 사람이 리뷰 | 남의 코드를 사람이 읽고 에이전트에게 질문 |
+| 라운드의 산출물 | 반영 커밋 | 스레드 답변 |
+| 세션 | 커밋마다 리셋 → 이월 | 커밋이 없어 유지 → `reply` 그대로 |
+| 먼저 하는 일 | 🔴🟡🟢 지적 스레드 | 🟢 읽기 순서 투어 (파일 5개 이상일 때 제안) |
+| 끝 | "OK" → PR 생성 | "다 읽었다" → 작성자에게 물을 것을 초안 파일로 (게시는 사용자) |
+
+`/difit-ask 123` 또는 "이 PR 같이 봐줘"로 시작한다. 절차는 [skills/difit-ask/SKILL.md](skills/difit-ask/SKILL.md).
+
 ## 코멘트 규약
 
 스레드 본문은 신호등으로 시작한다. 리뷰어는 빨강부터 본다.
@@ -63,13 +79,17 @@ Node ≥ 21이면 difit은 `npx`로 알아서 받는다.
 ## 들어 있는 것
 
 ```
-skills/difit-loop/
-├── SKILL.md                  절차 0~7단계 · 코멘트 주입 규약 · 스택 PR 모드
-└── scripts/                  의존성 없음
-    ├── first-added-line.mjs  diff에서 파일별 첫 + 줄 → 코멘트 앵커
-    ├── carry-comments.mjs    커밋으로 끊긴 스레드를 새 diff로 이월
-    ├── difit-port.sh         origin 레포명 → 5100~5890 사이 10의 배수 포트
-    └── difit-health-check.sh 창이 이상할 때 프로세스 · 포트별 /api/diff
+skills/
+├── difit-loop/
+│   ├── SKILL.md                  절차 0~7단계 · 코멘트 주입 규약 · 스택 PR 모드
+│   └── scripts/                  의존성 없음 (difit-ask 도 이것을 쓴다)
+│       ├── first-added-line.mjs  diff에서 파일별 첫 + 줄 → 코멘트 앵커
+│       ├── carry-comments.mjs    커밋으로 끊긴 스레드를 새 diff로 이월
+│       ├── pending-threads.mjs   마지막 메시지가 사용자 것인 스레드만 — 답할 질문 목록
+│       ├── difit-port.sh         origin 레포명 → 5100~5890 사이 10의 배수 포트
+│       └── difit-health-check.sh 창이 이상할 때 프로세스 · 포트별 /api/diff
+└── difit-ask/
+    └── SKILL.md                  남의 PR 읽기 루프 (워크트리 → 투어 → 질문/답글)
 ```
 
 ```bash
