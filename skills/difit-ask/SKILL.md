@@ -102,6 +102,9 @@ git pull
 node <scripts>/carry-comments.mjs old.json origin/<base>...HEAD > new.json && npx difit comment add --port $P "$(cat new.json)"
 ```
 
+이월된 스레드는 author가 전부 `claude`가 되므로 `pending-threads.mjs`가 더는 잡지 않는다 — **pull 전에 답하지
+않은 질문이 있으면 먼저 답하고** pull 한다.
+
 `--pr` 모드는 세션 키가 `stdin`이라 안 비지만 패치를 다시 받으려면 서버를 재기동해야 한다(코멘트는 `comment get`으로
 받아 뒀다가 `comment add`로 되돌린다).
 

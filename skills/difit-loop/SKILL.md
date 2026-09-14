@@ -52,6 +52,9 @@ SKILL.md를 먼저 읽고 이 절차를 맞춘다.
    ```bash
    node <이 스킬 경로>/scripts/first-added-line.mjs origin/<base>...HEAD
    ```
+   헬퍼는 `git diff`를 직접 부르며 `core.quotePath`(한글 경로 인용)·`diff.noprefix`·색·외부 diff 도구를 끈
+   채 읽는다 — 사용자 git 설정에 따라 파일이 조용히 빠지는 일을 막는다. 손으로 뽑은 diff를 `--stdin`으로
+   줄 때도 같은 파서가 인용 경로와 접두어를 벗긴다.
 5. 페이로드를 파일로 저장한다(예: `comments.json`). 형식은 「코멘트 주입 규약」.
 
 ## 2단계 — difit 기동 + 검증
@@ -103,9 +106,17 @@ npx difit comment get --port <port> --format json > old.json
 빈 세션이 된다 — 서버를 재시작하지 않아도 그렇다. 그래서 수집은 반드시 커밋 전에 끝내고 파일로
 남긴다. 이 파일은 지우지 않는다(서버가 죽어도 재주입할 수 있는 마지막 사본).
 
-`comment get`이 0건인데 사용자가 "달았다"고 하면 서버를 의심하지 말고 **탭의 localStorage**를 본다 —
-탭이 옛 diff를 보여주는 동안 단 코멘트는 옛 키(`difit-storage-v1/<repo-hash>/<base7>-<target7>-<mode>`)에만
-있다. 리뷰 종료 판정("코멘트 0건")은 서버와 탭을 둘 다 비운 뒤에만 내린다.
+답할 것만 추린다 — **"마지막 메시지가 내 것이 아닌 스레드"가 곧 미처리분**이다(별도 상태 파일이 필요 없다):
+
+```bash
+node <이 스킬 경로>/scripts/pending-threads.mjs < old.json      # {id, filePath, line, question, history} JSONL
+```
+
+`comment get`이 0건인데 사용자가 "달았다"고 하면 서버가 아니라 **탭이 옛 diff를 보고 있던 것**을 의심한다 —
+그동안 단 코멘트는 탭의 localStorage 옛 키(`difit-storage-v1/<repo-hash>/<base7>-<target7>-<mode>`)에만 있고
+서버에는 안 온다. 에이전트가 agent-browser로 연 탭이면 `eval`로 그 키를 읽고, 사용자가 직접 연 탭이면 읽을
+수 없으니 "탭을 새로고침한 뒤 코멘트가 남아 있는지 봐 달라"고 부탁하고 `comment get`을 다시 한다.
+리뷰 종료 판정("코멘트 0건")은 이 확인을 거친 뒤에만 내린다.
 
 ## 5단계 — 판단 · 반영 · 커밋
 
@@ -115,24 +126,33 @@ npx difit comment get --port <port> --format json > old.json
 - **동의하면** 반영 + 커밋. 왜 합당한지 한 줄.
 - **이견이 있으면** 반영하지 않은 채 근거를 들어 역제안. 재차 요구하면 반영하되 명백한 버그면 다시 경고.
 - **정보가 부족하면** 추측으로 구현하지 말고 역질문.
-- 처리한 thread ID를 세션 내에서 추적해 새 코멘트만 처리한다. `comment resolve`는 **스레드를 지우는**
+- 처리 여부는 thread ID로 추적하지 않는다 — 이월하면 ID가 새로 발급돼 라운드를 못 넘긴다. 마커는
+  `pending-threads.mjs`의 "내가 마지막으로 말했는가"뿐이다. `comment resolve`는 **스레드를 지우는**
   명령이라 기본적으로 쓰지 않는다.
+- 스레드마다 답변 한 문단을 `answers.json`에 **스레드 `id`를 키로** 모아 둔다 — 6단계가 본문에 잇는다.
+  반영이면 `→ 반영: …`, 역제안이면 `→ 역제안: …`, 질문이면 `→ 질문: …`으로 시작한다.
 
 반영분은 새 커밋으로 쌓는다. 서버는 그대로 둔다 — 파일 감시가 새 커밋을 화면에 반영한다.
 
 ## 6단계 — 스레드 이월
 
 커밋 뒤 답변을 붙일 때는 `reply`가 아니라 **새 `thread`로, 바뀐 줄 번호에** 올린다.
-`type: "reply"`는 매칭 스레드가 없으면 에러가 아니라 **경고로 조용히 스킵**되고 `success: true`가 온다.
+`type: "reply"`는 매칭 스레드가 없으면 에러가 아니라 `success: true`에 `warnings: ["Skipped reply import for
+<path>:new:<line> …"]`로 온다 — `add` 응답의 `count`와 `warnings`를 반드시 본다.
 
 1. **`GET /api/diff`의 `target`이 새 SHA로 바뀐 것을 먼저 확인한다.** 커밋 직후에는 서버가 잠깐 옛
    target을 쥐고 있어 `add`가 옛 세션에 붙어 "살아 있는 것처럼" 보이다가 몇 초 뒤 0건이 된다.
-2. 미해결 스레드를 새 diff의 유효한 앵커로 옮긴다 — 옛 줄이 아직 `+` 줄이면 유지, 아니면 그 뒤 첫
-   `+` 줄로(stderr `moved:`), 답글은 `> ` 인용으로 잇는다:
+2. 미해결 스레드를 새 diff의 유효한 앵커로 옮기고 5단계의 답변을 잇는다. 본문은 원문 → 사용자 답글(`> ` 인용)
+   → `answers.json`의 답변 순서로 한 스레드가 되고, author는 전부 `claude`다(이월은 에이전트의 게시다 —
+   사용자 저자를 유지하면 `pending-threads.mjs`가 그 스레드를 다음 라운드에 다시 잡는다):
    ```bash
-   node <이 스킬 경로>/scripts/carry-comments.mjs old.json origin/<base>...HEAD > new.json
+   node <이 스킬 경로>/scripts/carry-comments.mjs old.json origin/<base>...HEAD --answers answers.json > new.json
    npx difit comment add --port <port> "$(cat new.json)"
    ```
+   앵커 규칙 — 옛 줄이 아직 `+` 줄이면 유지, 아니면 그 파일에서 옛 줄 뒤 첫 `+` 줄, 그것도 없으면 파일의 첫
+   `+` 줄(stderr `moved:`). 파일이 새 diff에서 사라졌으면 `skip:`으로 알리고 빠진다 — 그 스레드의 답변은
+   채팅으로 전한다. 범위 앵커는 `start` 한 줄로, `old` 측 앵커는 `new` 측으로 바뀐다(삭제된 줄은 새 diff에서
+   다시 가리킬 수 없다). `answers.json`의 id가 `old.json`에 없으면 stderr로 알린다 — 오타를 그 자리에서 잡는다.
 3. 올린 뒤 `comment get`으로 `filePath:line`이 의도한 자리인지 확인하고, 사용자에게 "탭을 새로고침해
    주세요"로 안내한다.
 4. 추가 코멘트가 있으면 3~6단계를 반복한다. 사용자가 승인("OK")하면 7단계로.

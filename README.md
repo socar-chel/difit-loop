@@ -51,6 +51,7 @@ Node ≥ 21이면 difit은 `npx`로 알아서 받는다.
 | 브라우저 창을 닫으면 서버와 메모리의 코멘트가 함께 죽는다 | `--keep-alive` — 탭을 닫아도 서버는 산다 |
 | 포트가 조용히 +1로 밀려 옛 탭을 보게 된다 | 레포 이름에서 포트를 계산하고(`difit-port.sh`), 실제 포트를 JSON에서 읽는다 |
 | 에이전트가 단 스레드가 엉뚱한 줄에 붙거나 안 보인다 | `first-added-line.mjs`로 `+` 줄만 앵커로 쓴다 |
+| 같은 스레드를 라운드마다 다시 처리하거나, 처리한 것을 놓친다 | "마지막 메시지가 내 것인가"를 마커로 쓴다(`pending-threads.mjs`) — 이월 스레드는 답변을 이어 붙여 에이전트 저자로 다시 올린다 |
 
 ## 반대 방향 — `difit-ask`
 
@@ -92,8 +93,9 @@ skills/
 ├── difit-loop/
 │   ├── SKILL.md                  절차 0~7단계 · 코멘트 주입 규약 · 스택 PR 모드
 │   └── scripts/                  의존성 없음 (difit-ask 도 이것을 쓴다)
+│       ├── diff-lines.mjs        diff 파서 (아래 둘이 공유 · git 설정에 안 흔들리게 diff를 뽑는다)
 │       ├── first-added-line.mjs  diff에서 파일별 첫 + 줄 → 코멘트 앵커
-│       ├── carry-comments.mjs    커밋으로 끊긴 스레드를 새 diff로 이월
+│       ├── carry-comments.mjs    커밋으로 끊긴 스레드를 새 diff로 이월 (+ 스레드별 답변 잇기)
 │       ├── pending-threads.mjs   마지막 메시지가 사용자 것인 스레드만 — 답할 질문 목록
 │       ├── difit-port.sh         origin 레포명 → 5100~5890 사이 10의 배수 포트
 │       └── difit-health-check.sh 창이 이상할 때 프로세스 · 포트별 /api/diff
