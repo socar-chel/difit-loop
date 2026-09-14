@@ -7,7 +7,7 @@
 //   node carry-comments.mjs old.json origin/main...HEAD [--answers answers.json] [--me claude] > new.json
 //   npx difit comment add --port 5100 "$(cat new.json)"
 //
-// 왜 필요한가 — difit 코멘트 세션은 base+target 커밋 쌍이 키라 커밋마다 리셋된다(SKILL.md 4단계).
+// 왜 필요한가 — difit 코멘트 세션은 base+target 커밋 쌍이 키라 커밋마다 리셋된다(pair-review SKILL.md 4단계).
 // 되살릴 때 앵커를 눈으로 다시 세면 ①·② 함정(first-added-line.mjs 참조)에 다시 걸린다.
 //
 // 앵커 규칙: 옛 줄이 새 diff 에서도 + 줄이면 그대로, 아니면 그 파일에서 옛 줄 이후 첫 + 줄,

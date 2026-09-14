@@ -1,21 +1,26 @@
-# difit-loop
+# pair-review
 
-코딩 에이전트가 **PR을 올리기 전에 사람 리뷰를 받고, 반영하고, OK가 나올 때까지 반복**하게 하는 스킬 — 그리고
-반대 방향으로 **남의 PR을 읽으며 묻는** `difit-ask`.
-리뷰 화면은 [difit](https://github.com/yoshiko-pg/difit)(로컬 diff 뷰어)이고, difit은 고치지 않는다 — 어떻게 부르고,
-무엇을 넣고, 커밋 사이에서 코멘트를 어떻게 살리는지만 정한다.
+코드를 **에이전트와 페어로 리뷰**하는 Claude Code 스킬 두 개. 화면은 [difit](https://github.com/yoshiko-pg/difit)(로컬
+diff 뷰어)이고, difit은 고치지 않는다 — 어떻게 부르고, 무엇을 넣고, 커밋 사이에서 코멘트를 어떻게 살리는지만 정한다.
+
+| | 언제 | 호출 |
+| --- | --- | --- |
+| **`pair-review`** | **내 브랜치**를 PR 올리기 전에(또는 내 PR을 고치면서) 사람이 리뷰하고, 에이전트가 반영 커밋을 쌓고, OK까지 반복 | `/pair-review main` |
+| **`pair-review-pr`** | **남이 올린 PR**을 에이전트가 먼저 읽고 문제를 표시해 두고, 사용자의 질문·메모에 답하고, 리뷰 초안을 낸다. 코드는 안 고침 | `/pair-review-pr 123` |
+
+고치면서 볼 거면 `pair-review`, 읽고 리뷰할 거면 `pair-review-pr`.
 
 ```bash
-npx skills add socar-chel/difit-loop -g
+npx skills add socar-chel/pair-review -g
 ```
 
-설정은 없다. 설치 후 Claude Code에서 `/difit-loop <base>` 또는 "PR 준비하자"로 호출한다.
-Node ≥ 21이면 difit은 `npx`로 알아서 받는다.
+설정은 없다. 설치 후 Claude Code에서 `/pair-review <base>` 또는 "PR 준비하자", `/pair-review-pr <n>` 또는 "이 PR 같이 봐줘"로
+호출한다. Node ≥ 21이면 difit은 `npx`로 알아서 받는다.
 
 갱신은 자동이 아니다 — 이 리포가 바뀌면 `npx skills update -g`로 받는다. 스킬은 에이전트가 내 권한으로 따르는 지시문이니,
-갱신 뒤 `~/.claude/skills/difit-loop/`의 diff를 한 번 보는 것을 권한다.
+갱신 뒤 `~/.claude/skills/pair-review/`의 diff를 한 번 보는 것을 권한다.
 
-## 한 라운드
+## 한 라운드 — `pair-review`
 
 <img src="docs/loop.png" alt="한 라운드 — 에이전트: ① 커밋된 변경을 스스로 점검 → ② 리뷰 창을 연다 → ④ 코멘트를 검토, 맞는 것만 고쳐서 커밋 → ⑤ 리뷰 창의 스레드에 답글을 단다(고친 것도, 안 고친 이유도) → ⑦ PR 생성(스킬 밖). 사람: ③ 브라우저에서 코드 보며 코멘트를 단다 → 코멘트 달았어 → ⑥ 새 버전에서 답을 확인한다 → 더 묻거나 OK" width="100%">
 
@@ -53,22 +58,25 @@ Node ≥ 21이면 difit은 `npx`로 알아서 받는다.
 | 에이전트가 단 스레드가 엉뚱한 줄에 붙거나 안 보인다 | `first-added-line.mjs`로 `+` 줄만 앵커로 쓴다 |
 | 같은 스레드를 라운드마다 다시 처리하거나, 처리한 것을 놓친다 | "마지막 메시지가 내 것인가"를 마커로 쓴다(`pending-threads.mjs`) — 이월 스레드는 답변을 이어 붙여 에이전트 저자로 다시 올린다 |
 
-## 반대 방향 — `difit-ask`
+## 반대 방향 — `pair-review-pr`
 
-같은 설치로 들어오는 두 번째 스킬. **남이 올린 PR·브랜치**를 워크트리로 받아 difit에 띄우고, 사용자가 코드 줄에
-단 질문에 에이전트가 주변 코드·호출부·테스트를 읽고 **같은 스레드에 답글**을 단다. 코드는 고치지 않는다.
+**남이 올린 PR·브랜치**를 워크트리로 받아 difit에 띄운다. 에이전트가 먼저 읽고 발견한 문제(🔴🟡)와 읽기 순서 투어(🟢,
+파일이 많을 때)를 스레드로 달아 두고, 사용자가 코드 줄에 단 질문에는 주변 코드·호출부·테스트를 읽고 **같은 스레드에
+답글**을, 리뷰 메모에는 근거를 보강하거나 반론을 단다. 끝에 지적·작성자에게 물을 것·판정 제안을 **리뷰 초안 파일**로
+모은다. 코드는 고치지 않고, 게시는 사용자가 한다.
 
-| | `difit-loop` | `difit-ask` |
+| | `pair-review` | `pair-review-pr` |
 | --- | --- | --- |
-| 방향 | 내 코드를 사람이 리뷰 | 남의 코드를 사람이 읽고 에이전트에게 질문 |
+| 대상 | 내 브랜치 (PR 전, 또는 내 PR을 고치면서) | 남이 올린 PR·브랜치 |
+| 사용자 코멘트의 뜻 | "고쳐라" | "이거 왜?" · "여기 이상한데" |
 | 라운드의 산출물 | 반영 커밋 | 스레드 답변 |
 | 세션 | 커밋마다 리셋 → 이월 | 커밋이 없어 유지 → `reply` 그대로 |
-| 먼저 하는 일 | 🔴🟡🟢 지적 스레드 | 🟢 읽기 순서 투어 (파일 5개 이상일 때 제안) |
-| 끝 | "OK" → PR 생성 | "다 읽었다" → 작성자에게 물을 것을 초안 파일로 (게시는 사용자) |
+| 먼저 하는 일 | 🔴🟡🟢 셀프리뷰 스레드 | 🔴🟡 지적 + 🟢 읽기 순서 투어 (파일 5개 이상) |
+| 끝 | "OK" → PR 생성 | "다 봤다" → 리뷰 초안 파일 (게시는 사용자) |
 
-`/difit-ask 123` 또는 "이 PR 같이 봐줘"로 시작한다. 절차는 [skills/difit-ask/SKILL.md](skills/difit-ask/SKILL.md).
+절차는 [skills/pair-review-pr/SKILL.md](skills/pair-review-pr/SKILL.md).
 
-<img src="docs/screens/04-ask-thread.png" alt="difit-ask: 🟢 읽기 순서 투어 스레드 → 사용자 질문 → 코드 근거(package.json 줄·커밋)를 인용한 답글 → 작성자에게 물을 것 표시" width="100%">
+<img src="docs/screens/04-ask-thread.png" alt="pair-review-pr: 🟢 읽기 순서 투어 스레드 → 사용자 질문 → 코드 근거(package.json 줄·커밋)를 인용한 답글 → 작성자에게 물을 것 표시" width="100%">
 
 실제 공개 PR(yoshiko-pg/difit #470, 파일 6개)에서 — 🟢 투어 → 사용자 질문 → `package.json:95`·커밋 `d6c86bf`를 근거로 답하고,
 코드만으로 모르는 것은 `→ 작성자`로 표시해 마무리 초안으로 모은다.
@@ -90,26 +98,27 @@ Node ≥ 21이면 difit은 `npx`로 알아서 받는다.
 
 ```
 skills/
-├── difit-loop/
-│   ├── SKILL.md                  절차 0~7단계 · 코멘트 주입 규약 · 스택 PR 모드
-│   └── scripts/                  의존성 없음 (difit-ask 도 이것을 쓴다)
+├── pair-review/
+│   ├── SKILL.md                  내 브랜치 루프 — 셀프리뷰 시드 → 코멘트 → 반영 커밋 → 이월 ⟲ · 스택 PR 모드
+│   ├── COMMON.md                 두 스킬 공통 — 띄우기·검증 · 포트 · 코멘트 규약 · 수집 마커 · 창 이상
+│   └── scripts/                  의존성 없음 (pair-review-pr 도 이것을 쓴다)
 │       ├── diff-lines.mjs        diff 파서 (아래 둘이 공유 · git 설정에 안 흔들리게 diff를 뽑는다)
 │       ├── first-added-line.mjs  diff에서 파일별 첫 + 줄 → 코멘트 앵커
 │       ├── carry-comments.mjs    커밋으로 끊긴 스레드를 새 diff로 이월 (+ 스레드별 답변 잇기)
 │       ├── pending-threads.mjs   마지막 메시지가 사용자 것인 스레드만 — 답할 질문 목록
 │       ├── difit-port.sh         origin 레포명 → 5100~5890 사이 10의 배수 포트
 │       └── difit-health-check.sh 창이 이상할 때 프로세스 · 포트별 /api/diff
-└── difit-ask/
-    └── SKILL.md                  남의 PR 읽기 루프 (워크트리 → 투어 → 질문/답글)
+└── pair-review-pr/
+    └── SKILL.md                  남의 PR 루프 (워크트리 → 지적·투어 시드 → 질문/메모 답글 → 리뷰 초안)
 ```
 
 ```bash
-node --test skills/difit-loop/scripts/*.test.mjs
+node --test skills/pair-review/scripts/*.test.mjs
 ```
 
 ## 선택 사항
 
-- **PR 전 강제** — CLAUDE.md에 `- PR을 만들기 전에 /difit-loop 로 사용자 리뷰를 받는다.`
+- **PR 전 강제** — CLAUDE.md에 `- PR을 만들기 전에 /pair-review 로 사용자 리뷰를 받는다.`
 - **포트 직접 지정** — CLAUDE.md에 `- 레포별 포트: <레포A> 5100 · <레포B> 5110`. 계산값보다 우선한다.
 - **다른 에이전트** — 절차는 셸 명령과 규칙뿐이라 AGENTS.md 등에 SKILL.md 내용을 옮기면 된다.
 
